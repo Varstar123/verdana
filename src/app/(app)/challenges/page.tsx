@@ -8,7 +8,7 @@ export const metadata: Metadata = { title: "Challenges" };
 
 export default async function ChallengesPage() {
   const session = await getSession();
-  const persisted = isFirebaseAdminConfigured && session.authenticated;
+  const persisted = isFirebaseAdminConfigured;
 
   return (
     <div className="container-px py-8">

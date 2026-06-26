@@ -7,7 +7,8 @@ import { UserButton } from "@clerk/nextjs";
 import { searchProfiles } from "@/lib/community";
 import { Avatar } from "@/components/app/Avatar";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
-import { SearchIcon, BellIcon, ShieldCheckIcon } from "@/components/icons";
+import { NotificationsBell } from "@/components/app/NotificationsBell";
+import { SearchIcon, ShieldCheckIcon } from "@/components/icons";
 
 export function Topbar({
   displayName,
@@ -104,14 +105,7 @@ export function Topbar({
             Admin
           </Link>
         )}
-        <button
-          type="button"
-          aria-label="Notifications"
-          className="relative grid h-9 w-9 place-items-center rounded-full border border-hairline/15 bg-surface text-muted transition-colors hover:text-ink"
-        >
-          <BellIcon className="h-[18px] w-[18px]" />
-          <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-aurora-pink" />
-        </button>
+        <NotificationsBell />
         <ThemeToggle />
         {showUserButton ? (
           <div className="ml-1 grid h-9 w-9 place-items-center">

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { getSession } from "@/lib/session";
 import { getFeed } from "@/lib/feed";
-import { isFirebaseAdminConfigured } from "@/lib/env";
+import { isFirebaseAdminConfigured, isFirebaseConfigured } from "@/lib/env";
 import { TOP_PROFILES } from "@/lib/community";
 import { computeEcoScore, getLevel } from "@/lib/scoring";
 import { CommunityFeed } from "@/components/app/CommunityFeed";
@@ -11,8 +11,8 @@ export const metadata: Metadata = { title: "Community" };
 
 export default async function CommunityPage() {
   const [session, feed] = await Promise.all([getSession(), getFeed()]);
-  const { profile, authenticated } = session;
-  const persisted = isFirebaseAdminConfigured && authenticated;
+  const { profile } = session;
+  const persisted = isFirebaseAdminConfigured;
 
   const suggestions = TOP_PROFILES.filter(
     (p) => p.planetId !== profile.planetId,
@@ -57,6 +57,7 @@ export default async function CommunityPage() {
           planetId: profile.planetId,
         }}
         persisted={persisted}
+        realtime={isFirebaseConfigured}
       />
     </div>
   );

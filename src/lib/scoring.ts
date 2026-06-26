@@ -53,6 +53,18 @@ export const LEVELS: { name: string; minScore: number; accent: string }[] = [
   { name: "Legend of Verdana", minScore: 70000, accent: "#EC4899" },
 ];
 
+/** What each level unlocks (aligned by index to LEVELS). */
+export const LEVEL_REWARDS: { perks: string[] }[] = [
+  { perks: ["Starter Earth", "Default profile theme"] },
+  { perks: ["Sapling badge", "Sprout avatar ring"] },
+  { perks: ["Forest theme", "Wildflowers on your Earth"] },
+  { perks: ["Ranger profile frame", "Returning wildlife on your Earth"] },
+  { perks: ["Aurora theme", "Glacier recovery Earth upgrade"] },
+  { perks: ["Protector decoration", "City lights on your night side"] },
+  { perks: ["Champion gold frame", "Lush rainforest Earth upgrade"] },
+  { perks: ["Legendary aura", "Dream Earth (max bloom)", "Exclusive Legend theme"] },
+];
+
 export function getLevel(ecoScore: number): LevelInfo {
   let index = 0;
   for (let i = LEVELS.length - 1; i >= 0; i--) {

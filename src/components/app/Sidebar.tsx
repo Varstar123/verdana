@@ -12,6 +12,7 @@ import {
   TargetIcon,
   ChartIcon,
   SproutIcon,
+  StarIcon,
 } from "@/components/icons";
 
 const nav = [
@@ -22,6 +23,7 @@ const nav = [
   { href: "/community", label: "Community", icon: UsersIcon },
   { href: "/forums", label: "Forums", icon: CompassIcon },
   { href: "/challenges", label: "Challenges", icon: TargetIcon },
+  { href: "/rewards", label: "Levels", icon: StarIcon },
 ];
 
 export function Sidebar({ planetId }: { planetId: string }) {

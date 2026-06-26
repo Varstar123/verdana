@@ -66,7 +66,7 @@ export default async function ProfilePage({
 
   const session = await getSession();
   const isYou = profile.planetId === session.profile.planetId;
-  const persisted = isFirebaseAdminConfigured && session.authenticated;
+  const persisted = isFirebaseAdminConfigured;
   const initialFollowing = persisted ? await getFollowState(profile.planetId) : false;
 
   const miniStats = [

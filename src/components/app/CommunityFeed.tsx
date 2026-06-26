@@ -24,14 +24,40 @@ function extractHashtags(text: string): string[] {
   return Array.from(text.matchAll(/#(\w+)/g)).map((m) => m[1]).slice(0, 6);
 }
 
+function relLabel(ms: number): string {
+  const m = Math.floor((Date.now() - ms) / 60000);
+  if (m < 1) return "now";
+  if (m < 60) return `${m}m`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h`;
+  return `${Math.floor(h / 24)}d`;
+}
+
+function mapLiveDoc(id: string, d: Record<string, unknown>): FeedPost {
+  return {
+    id,
+    authorName: (d.authorName as string) ?? "Anonymous",
+    authorHue: (d.authorHue as number) ?? 150,
+    authorPlanetId: (d.authorPlanetId as string) ?? "VER-000000",
+    body: (d.body as string) ?? "",
+    hashtags: (d.hashtags as string[]) ?? [],
+    likes: (d.likes as number) ?? 0,
+    likedByMe: false,
+    comments: (d.comments as FeedPost["comments"]) ?? [],
+    createdAt: relLabel((d.ts as number) ?? Date.now()),
+  };
+}
+
 export function CommunityFeed({
   initial,
   me,
   persisted,
+  realtime = false,
 }: {
   initial: FeedPost[];
   me: Me;
   persisted: boolean;
+  realtime?: boolean;
 }) {
   const [posts, setPosts] = useState<FeedPost[]>(initial);
   const [draft, setDraft] = useState("");
@@ -50,6 +76,34 @@ export function CommunityFeed({
       /* ignore */
     }
   }, [initial, persisted]);
+
+  // Real-time feed: subscribe to Firestore when configured.
+  useEffect(() => {
+    if (!realtime) return;
+    let unsub = () => {};
+    let cancelled = false;
+    (async () => {
+      try {
+        const { getDb } = await import("@/lib/firebase/client");
+        const db = getDb();
+        if (!db || cancelled) return;
+        const { collection, query, orderBy, limit, onSnapshot } = await import(
+          "firebase/firestore"
+        );
+        const q = query(collection(db, "posts"), orderBy("ts", "desc"), limit(50));
+        unsub = onSnapshot(q, (snap) => {
+          if (snap.empty) return; // keep seeded initial until real posts exist
+          setPosts(snap.docs.map((d) => mapLiveDoc(d.id, d.data())));
+        });
+      } catch {
+        /* stay on server-rendered feed */
+      }
+    })();
+    return () => {
+      cancelled = true;
+      unsub();
+    };
+  }, [realtime]);
 
   function saveLocal(next: FeedPost[]) {
     try {

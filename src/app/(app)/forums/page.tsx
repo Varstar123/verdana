@@ -8,8 +8,8 @@ export const metadata: Metadata = { title: "Forums" };
 
 export default async function ForumsPage() {
   const [session, threads] = await Promise.all([getSession(), getThreads()]);
-  const { profile, authenticated } = session;
-  const persisted = isFirebaseAdminConfigured && authenticated;
+  const { profile } = session;
+  const persisted = isFirebaseAdminConfigured;
 
   return (
     <div className="container-px py-8">
