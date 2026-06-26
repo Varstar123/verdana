@@ -11,15 +11,17 @@ import {
   CompassIcon,
   TargetIcon,
   ChartIcon,
+  SproutIcon,
 } from "@/components/icons";
 
 const nav = [
   { href: "/dashboard", label: "Dashboard", icon: HomeIcon },
-  { href: "/earth", label: "My Earth", icon: GlobeIcon },
+  { href: "/earth", label: "My Earth", icon: SproutIcon },
+  { href: "/globe", label: "Global Earth", icon: GlobeIcon },
   { href: "/leaderboard", label: "Leaderboard", icon: TrophyIcon },
   { href: "/community", label: "Community", icon: UsersIcon },
   { href: "/forums", label: "Forums", icon: CompassIcon },
-  { href: "/challenges", label: "Challenges", icon: TargetIcon, soon: true },
+  { href: "/challenges", label: "Challenges", icon: TargetIcon },
 ];
 
 export function Sidebar({ planetId }: { planetId: string }) {
@@ -40,30 +42,18 @@ export function Sidebar({ planetId }: { planetId: string }) {
         {nav.map((item) => {
           const active = pathname === item.href;
           const Icon = item.icon;
-          const content = (
-            <>
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
+                active
+                  ? "bg-brand/12 text-brand"
+                  : "text-muted hover:bg-ink/5 hover:text-ink"
+              }`}
+            >
               <Icon className="h-5 w-5" />
               <span className="flex-1">{item.label}</span>
-              {item.soon && (
-                <span className="rounded-full bg-ink/5 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-faint">
-                  Soon
-                </span>
-              )}
-            </>
-          );
-          const cls = `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
-            active
-              ? "bg-brand/12 text-brand"
-              : "text-muted hover:bg-ink/5 hover:text-ink"
-          } ${item.soon ? "cursor-default opacity-70" : ""}`;
-
-          return item.soon ? (
-            <span key={item.href} className={cls} aria-disabled>
-              {content}
-            </span>
-          ) : (
-            <Link key={item.href} href={item.href} className={cls}>
-              {content}
             </Link>
           );
         })}
