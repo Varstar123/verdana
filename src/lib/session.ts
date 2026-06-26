@@ -1,6 +1,6 @@
 import "server-only";
-import type { Profile, ProfileStats } from "@/lib/types";
-import { isClerkConfigured, isFirebaseAdminConfigured } from "@/lib/env";
+import type { Profile } from "@/lib/types";
+import { isClerkConfigured } from "@/lib/env";
 import { DEMO_PROFILE } from "@/lib/community";
 
 export interface Session {
@@ -13,41 +13,15 @@ export interface Session {
   profile: Profile;
 }
 
-/** Merge a Firestore profile doc over a base profile (defensive). */
-function mergeProfileDoc(base: Profile, data: Record<string, unknown>): Profile {
-  const num = (k: string, d: number) =>
-    typeof data[k] === "number" ? (data[k] as number) : d;
-  const stats: ProfileStats = {
-    treesPlanted: num("treesPlanted", base.stats.treesPlanted),
-    co2OffsetKg: num("co2OffsetKg", base.stats.co2OffsetKg),
-    plasticRemovedKg: num("plasticRemovedKg", base.stats.plasticRemovedKg),
-    donationsUsd: num("donationsUsd", base.stats.donationsUsd),
-    volunteerHours: num("volunteerHours", base.stats.volunteerHours),
-    recycleKg: num("recycleKg", base.stats.recycleKg),
-    challengesCompleted: num("challengesCompleted", base.stats.challengesCompleted),
-    lessonsCompleted: num("lessonsCompleted", base.stats.lessonsCompleted),
-    ecoPoints: num("ecoPoints", base.stats.ecoPoints),
-    streakDays: num("streakDays", base.stats.streakDays),
-  };
-  return {
-    ...base,
-    displayName: (data.displayName as string) || base.displayName,
-    username: (data.username as string) || base.username,
-    planetId: (data.planetId as string) || base.planetId,
-    bio: (data.bio as string) ?? base.bio,
-    country: (data.country as string) || base.country,
-    stats,
-  };
-}
-
 /**
  * Returns the active session.
  *
- * - Demo mode (no Clerk keys): the seeded demo profile, with admin access so the
- *   admin module is explorable.
- * - Clerk configured: identity from Clerk (Google sign-in). If Firebase (admin)
- *   is configured, the profile is read from Firestore `profiles/{userId}`;
- *   otherwise it falls back to the demo profile data.
+ * - Demo mode (no Clerk): the seeded demo profile, with admin access so the admin
+ *   module is explorable.
+ * - Clerk signed in: identity from Clerk (Google). The profile is read from
+ *   Firestore `profiles/{userId}` and CREATED fresh on first sign-in, so every
+ *   real user gets their own Planet ID + stats. Falls back to the demo profile
+ *   only if Firestore isn't configured.
  */
 export async function getSession(): Promise<Session> {
   if (!isClerkConfigured) {
@@ -62,29 +36,26 @@ export async function getSession(): Promise<Session> {
     }
 
     const user = await currentUser();
-    const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(" ");
+    const fullName =
+      [user?.firstName, user?.lastName].filter(Boolean).join(" ") ||
+      user?.username ||
+      "Verdana Citizen";
+    const username =
+      user?.username ||
+      user?.primaryEmailAddress?.emailAddress?.split("@")[0] ||
+      `citizen-${userId.slice(-5)}`;
     const isAdmin =
       (user?.publicMetadata as { role?: string } | undefined)?.role === "admin";
 
     let profile: Profile = {
       ...DEMO_PROFILE,
-      displayName: fullName || user?.username || DEMO_PROFILE.displayName,
-      username: user?.username || DEMO_PROFILE.username,
+      displayName: fullName,
+      username,
     };
 
-    // Read the user's profile from Firestore when the DB is wired up.
-    if (isFirebaseAdminConfigured) {
-      try {
-        const { getAdminDb } = await import("@/lib/firebase/admin");
-        const db = getAdminDb();
-        if (db) {
-          const snap = await db.collection("profiles").doc(userId).get();
-          if (snap.exists) profile = mergeProfileDoc(profile, snap.data() ?? {});
-        }
-      } catch {
-        // Firestore hiccup — keep the Clerk-derived profile.
-      }
-    }
+    const { ensureProfile } = await import("@/lib/firebase/profiles");
+    const real = await ensureProfile(userId, fullName, username);
+    if (real) profile = real;
 
     return { authenticated: true, demo: false, isAdmin, profile };
   } catch {

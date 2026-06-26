@@ -21,6 +21,7 @@ import { BADGES } from "@/lib/scoring";
 import { getSession } from "@/lib/session";
 import { isFirebaseAdminConfigured } from "@/lib/env";
 import { getFollowState } from "@/app/(app)/social-actions";
+import { getProfileByPlanetIdFromDb } from "@/lib/firebase/profiles";
 import {
   StarIcon,
   MapPinIcon,
@@ -54,7 +55,10 @@ export default async function ProfilePage({
   params: Promise<{ planetId: string }>;
 }) {
   const { planetId } = await params;
-  const profile = getProfileByPlanetId(planetId);
+  let profile = getProfileByPlanetId(planetId);
+  if (!profile && isFirebaseAdminConfigured) {
+    profile = (await getProfileByPlanetIdFromDb(planetId)) ?? undefined;
+  }
   if (!profile) notFound();
 
   const s = profile.stats;

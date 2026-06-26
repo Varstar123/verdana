@@ -21,7 +21,7 @@ const features = [
   },
   {
     icon: TrophyIcon,
-    title: "Global leaderboards",
+    title: "Changemakers board",
     body: "Compete by eco-score, trees, volunteering and more. Rise through the ranks against 58,000+ citizens worldwide.",
   },
   {
@@ -72,7 +72,7 @@ export default function LandingPage() {
             Features
           </a>
           <Link href="/leaderboard" className="rounded-full px-4 py-2 text-sm font-medium text-muted hover:text-ink">
-            Leaderboard
+            Changemakers
           </Link>
           <Link href="/dashboard" className="rounded-full px-4 py-2 text-sm font-medium text-muted hover:text-ink">
             Demo

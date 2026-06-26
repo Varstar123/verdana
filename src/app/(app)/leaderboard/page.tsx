@@ -3,7 +3,7 @@ import { ALL_PROFILES, GLOBAL_STATS } from "@/lib/community";
 import { computeEcoScore, formatCompact } from "@/lib/scoring";
 import { LeaderboardBoard } from "@/components/app/LeaderboardBoard";
 
-export const metadata: Metadata = { title: "Leaderboard" };
+export const metadata: Metadata = { title: "Changemakers" };
 
 function topCountries() {
   const map = new Map<string, number>();
@@ -22,7 +22,7 @@ export default function LeaderboardPage() {
   return (
     <div className="container-px space-y-8 py-8">
       <header>
-        <p className="eyebrow">Global standings</p>
+        <p className="eyebrow">Changemakers</p>
         <h1 className="mt-1 font-display text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
           The world is competing to heal the planet
         </h1>
