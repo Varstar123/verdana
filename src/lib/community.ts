@@ -14,8 +14,8 @@ import { computeEcoScore, evaluateBadges, getLevel } from "@/lib/scoring";
 /* ---------------------------------------------------------------------------
  * Deterministic demo dataset.
  * Everything here is seeded (no Math.random / Date.now at runtime) so the
- * server and client render identical markup — no hydration drift. When Supabase
- * is configured, src/lib/session.ts and the page loaders read from the DB
+ * server and client render identical markup — no hydration drift. When Firebase
+ * is configured, src/lib/session.ts and the page loaders read from Firestore
  * instead; these helpers remain the demo fallback.
  * ------------------------------------------------------------------------- */
 

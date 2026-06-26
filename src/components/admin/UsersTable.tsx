@@ -154,7 +154,7 @@ export function UsersTable({ initial }: { initial: AdminUserRow[] }) {
 
       <p className="mt-3 text-xs text-faint">
         Showing {filtered.length} of {rows.length}. Actions are local in demo mode;
-        wire them to Supabase/Clerk to persist.
+        wire them to Firestore/Clerk to persist.
       </p>
     </div>
   );

@@ -109,7 +109,7 @@ export function ChallengeManager({ initial }: { initial: DailyChallenge[] }) {
         </button>
         <p className="flex items-center gap-1.5 text-xs text-faint">
           <CheckIcon className="h-3.5 w-3.5" />
-          Demo only — persist via Supabase to publish to users.
+          Demo only — persist via Firestore to publish to users.
         </p>
       </form>
     </div>

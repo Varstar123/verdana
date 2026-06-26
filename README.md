@@ -36,15 +36,15 @@ seeded users, leaderboards, a sample dashboard, and an interactive 3D Earth.
 | Motion       | Framer Motion                                                |
 | Theming      | next-themes (dark default, light toggle)                     |
 | Auth         | Clerk (`@clerk/nextjs`) — Google sign-in — **optional**, demo fallback |
-| Database     | Supabase (`@supabase/ssr`) — scaffolded, **optional**        |
+| Database     | Firebase Firestore (`firebase` + `firebase-admin`) — **optional** |
 | Fonts        | Sora (display) · Inter (UI)                                  |
 
 ---
 
 ## Demo mode vs. live mode
 
-Auth is **Clerk** (Google sign-in); the database is **Supabase**. Both are
-optional — the app reads their env keys and degrades gracefully:
+Auth is **Clerk** (Google sign-in); the database is **Firebase Firestore**. Both
+are optional — the app reads their env keys and degrades gracefully:
 
 - **No keys → demo mode.** Seeded data from [src/lib/community.ts](src/lib/community.ts),
   a simulated session (demo profile `VER-582931`, with **admin access**), and an
@@ -64,11 +64,12 @@ optional — the app reads their env keys and degrades gracefully:
 4. To make yourself an admin, set your user's `publicMetadata` to
    `{ "role": "admin" }` in the Clerk dashboard.
 
-**Database (Supabase, scaffolded — optional):**
-1. Create a Supabase project; run
-   [supabase/migrations/0001_init.sql](supabase/migrations/0001_init.sql).
-2. Add the `NEXT_PUBLIC_SUPABASE_*` keys. Clients live in
-   [src/lib/supabase/](src/lib/supabase/); wire reads through
+**Database (Firebase Firestore — optional):**
+1. Create a Firebase project, add a Web app, enable Firestore, and publish
+   [firebase/firestore.rules](firebase/firestore.rules). See
+   [firebase/README.md](firebase/README.md) for the collection model.
+2. Add the `NEXT_PUBLIC_FIREBASE_*` keys (+ a service account for server reads).
+   Clients live in [src/lib/firebase/](src/lib/firebase/); reads are wired through
    [src/lib/session.ts](src/lib/session.ts) / [src/lib/community.ts](src/lib/community.ts).
 
 ---
@@ -99,8 +100,8 @@ auto-detects as Next.js; no build settings needed.
 | `CLERK_SECRET_KEY` | Clerk **production** `sk_live_…` |
 | `NEXT_PUBLIC_CLERK_SIGN_IN_URL` | `/login` |
 | `NEXT_PUBLIC_CLERK_SIGN_UP_URL` | `/signup` |
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key |
+| `NEXT_PUBLIC_FIREBASE_API_KEY` etc. | Firebase Web app config (6 vars) |
+| `FIREBASE_PROJECT_ID` / `FIREBASE_CLIENT_EMAIL` / `FIREBASE_PRIVATE_KEY` | Service account (server reads) |
 
 > With no keys set it still deploys — in demo mode. Add the keys to go live.
 
@@ -108,8 +109,11 @@ auto-detects as Next.js; no build settings needed.
 Vercel domain, enable **Google** under SSO Connections (production needs your own
 Google OAuth credentials), and use the `pk_live`/`sk_live` keys above.
 
-**5. Supabase** — run [supabase/migrations/0001_init.sql](supabase/migrations/0001_init.sql)
-in the SQL editor, then add the URL + anon key.
+**5. Firebase** — create a project + Web app, enable Firestore, publish
+[firebase/firestore.rules](firebase/firestore.rules), then add the
+`NEXT_PUBLIC_FIREBASE_*` config and a service account (see
+[firebase/README.md](firebase/README.md)). On Vercel, paste `FIREBASE_PRIVATE_KEY`
+with its literal `\n` newlines.
 
 **6. Make yourself admin** — Clerk dashboard → your user → Metadata →
 `publicMetadata` = `{ "role": "admin" }`, then visit `/admin`.
@@ -165,10 +169,10 @@ src/
   lib/
     scoring.ts        # eco-score / levels / earth-health / badges
     community.ts      # deterministic demo dataset + queries (DB seam)
-    session.ts        # current user (Supabase or demo)
-    supabase/         # browser + server clients (null in demo)
+    session.ts        # current user (Firestore or demo)
+    firebase/         # browser + admin Firestore clients (null in demo)
     types.ts  env.ts
-supabase/migrations/  # 0001_init.sql
+firebase/             # firestore.rules + collection model (README)
 ```
 
 ---
@@ -179,7 +183,7 @@ supabase/migrations/  # 0001_init.sql
   Earth, profiles + Planet ID, leaderboards, badges/levels/eco-score. ✅
 - **Next — social:** community feed (posts/likes/comments), follow system +
   activity feed, Reddit-style forums, daily challenge completion, friends graph.
-  (Schema + tables already in the migration.)
+  (Firestore collection model documented in [firebase/README.md](firebase/README.md).)
 - **Later:** global shared Earth with realtime updates, notifications, themes &
   profile decorations, org/city/university leaderboards.
 
