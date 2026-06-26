@@ -73,6 +73,47 @@ optional — the app reads their env keys and degrades gracefully:
 
 ---
 
+## Deploy to Vercel
+
+The repo is git-initialized and committed on `main`.
+
+**1. Push to GitHub** (either path):
+
+```bash
+# Option A — GitHub CLI (after `gh auth login`)
+gh repo create verdana --private --source=. --push
+
+# Option B — plain git (create an empty repo on github.com first)
+git remote add origin https://github.com/<you>/verdana.git
+git push -u origin main
+```
+
+**2. Import on Vercel** — vercel.com → New Project → import the repo. Framework
+auto-detects as Next.js; no build settings needed.
+
+**3. Set environment variables** (Vercel → Project → Settings → Environment Variables):
+
+| Variable | Value |
+| --- | --- |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Clerk **production** `pk_live_…` |
+| `CLERK_SECRET_KEY` | Clerk **production** `sk_live_…` |
+| `NEXT_PUBLIC_CLERK_SIGN_IN_URL` | `/login` |
+| `NEXT_PUBLIC_CLERK_SIGN_UP_URL` | `/signup` |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key |
+
+> With no keys set it still deploys — in demo mode. Add the keys to go live.
+
+**4. Clerk production setup** — create/switch to a **Production** instance, add your
+Vercel domain, enable **Google** under SSO Connections (production needs your own
+Google OAuth credentials), and use the `pk_live`/`sk_live` keys above.
+
+**5. Supabase** — run [supabase/migrations/0001_init.sql](supabase/migrations/0001_init.sql)
+in the SQL editor, then add the URL + anon key.
+
+**6. Make yourself admin** — Clerk dashboard → your user → Metadata →
+`publicMetadata` = `{ "role": "admin" }`, then visit `/admin`.
+
 ## What's included (V2 — foundation + signature)
 
 ### App (authenticated `(app)` group)
