@@ -1,4 +1,4 @@
-rules_version = '2';
+  rules_version = '2';
 
 // Verdana Firestore security rules.
 // Auth is handled by Clerk (not Firebase Auth), so privileged writes go through

@@ -229,3 +229,25 @@ export interface GlobalStats {
   online: number;
 }
 
+export interface FeedComment {
+  id: string;
+  authorName: string;
+  authorHue: number;
+  authorPlanetId: string;
+  body: string;
+  createdAt: string; // display label e.g. "2h", "now"
+}
+
+export interface FeedPost {
+  id: string;
+  authorName: string;
+  authorHue: number;
+  authorPlanetId: string;
+  body: string;
+  hashtags: string[];
+  likes: number;
+  likedByMe: boolean;
+  comments: FeedComment[];
+  createdAt: string; // display label e.g. "2h", "now"
+}
+
