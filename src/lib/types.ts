@@ -193,7 +193,8 @@ export type ActivityVerb =
   | "leveled_up"
   | "earned_badge"
   | "completed_challenge"
-  | "joined";
+  | "joined"
+  | "posted";
 
 export interface ActivityItem {
   id: string;

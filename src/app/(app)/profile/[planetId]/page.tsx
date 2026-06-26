@@ -18,6 +18,9 @@ import { Avatar } from "@/components/app/Avatar";
 import { BadgeChip } from "@/components/app/BadgeChip";
 import { FollowButton } from "@/components/app/FollowButton";
 import { BADGES } from "@/lib/scoring";
+import { getSession } from "@/lib/session";
+import { isFirebaseAdminConfigured } from "@/lib/env";
+import { getFollowState } from "@/app/(app)/social-actions";
 import {
   StarIcon,
   MapPinIcon,
@@ -60,7 +63,11 @@ export default async function ProfilePage({
   const health = computeEarthHealth(ecoScore);
   const { stage } = getEarthStage(health);
   const rank = rankFor(profile.planetId, profile.id);
-  const isYou = profile.id === DEMO_PROFILE.id;
+
+  const session = await getSession();
+  const isYou = profile.planetId === session.profile.planetId;
+  const persisted = isFirebaseAdminConfigured && session.authenticated;
+  const initialFollowing = persisted ? await getFollowState(profile.planetId) : false;
 
   const miniStats = [
     { label: "Trees", value: s.treesPlanted, icon: TreeIcon },
@@ -99,7 +106,14 @@ export default async function ProfilePage({
             </div>
           </div>
           <div className="flex items-center gap-2 pb-1">
-            {!isYou && <FollowButton name={profile.displayName} />}
+            {!isYou && (
+              <FollowButton
+                targetPlanetId={profile.planetId}
+                targetName={profile.displayName}
+                persisted={persisted}
+                initialFollowing={initialFollowing}
+              />
+            )}
             {isYou && (
               <span className="btn-secondary cursor-default">Your profile</span>
             )}

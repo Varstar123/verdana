@@ -12,12 +12,12 @@ import {
 import {
   GLOBAL_RANK,
   nearbyRankRows,
-  ACTIVITY_FEED,
   DAILY_CHALLENGES,
   MONTHLY_CONTRIB,
   WEEKLY_ACTIVITY,
   MILESTONES,
 } from "@/lib/community";
+import { getActivity } from "@/lib/social";
 import { EarthScene } from "@/components/earth/EarthScene";
 import { StatCard } from "@/components/app/StatCard";
 import { ProgressRing } from "@/components/app/ProgressRing";
@@ -46,6 +46,7 @@ export default async function DashboardPage() {
   const health = computeEarthHealth(ecoScore);
   const { stage, index: stageIndex } = getEarthStage(health);
   const nearby = nearbyRankRows();
+  const activity = await getActivity();
 
   const stats = [
     { label: "Trees planted", value: s.treesPlanted, iconKey: "tree" as const, accent: "#22A155" },
@@ -308,7 +309,7 @@ export default async function DashboardPage() {
             </span>
           </div>
           <div className="mt-3">
-            <ActivityFeed items={ACTIVITY_FEED} />
+            <ActivityFeed items={activity} />
           </div>
         </div>
 

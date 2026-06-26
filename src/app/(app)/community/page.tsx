@@ -2,7 +2,10 @@ import type { Metadata } from "next";
 import { getSession } from "@/lib/session";
 import { getFeed } from "@/lib/feed";
 import { isFirebaseAdminConfigured } from "@/lib/env";
+import { TOP_PROFILES } from "@/lib/community";
+import { computeEcoScore, getLevel } from "@/lib/scoring";
 import { CommunityFeed } from "@/components/app/CommunityFeed";
+import { WhoToFollow } from "@/components/app/WhoToFollow";
 
 export const metadata: Metadata = { title: "Community" };
 
@@ -10,6 +13,18 @@ export default async function CommunityPage() {
   const [session, feed] = await Promise.all([getSession(), getFeed()]);
   const { profile, authenticated } = session;
   const persisted = isFirebaseAdminConfigured && authenticated;
+
+  const suggestions = TOP_PROFILES.filter(
+    (p) => p.planetId !== profile.planetId,
+  )
+    .slice(0, 6)
+    .map((p) => ({
+      planetId: p.planetId,
+      name: p.displayName,
+      hue: p.avatarHue,
+      level: getLevel(computeEcoScore(p.stats)).name,
+      country: p.country,
+    }));
 
   return (
     <div className="container-px py-8">
@@ -29,6 +44,10 @@ export default async function CommunityPage() {
           )}
         </p>
       </header>
+
+      <div className="mx-auto max-w-2xl">
+        <WhoToFollow suggestions={suggestions} persisted={persisted} />
+      </div>
 
       <CommunityFeed
         initial={feed}
