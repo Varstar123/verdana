@@ -34,15 +34,6 @@ export function EarthScene({
   return (
     <EarthErrorBoundary fallback={<EarthOrbFallback />}>
       <div className={`relative h-full w-full ${className ?? ""}`}>
-        {/* Soft circular glow hugging the planet (behind the transparent canvas) */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 blur-2xl"
-          style={{
-            background:
-              "radial-gradient(circle at 50% 50%, rgba(80,160,255,0.28) 0%, rgba(45,200,160,0.10) 34%, transparent 56%)",
-          }}
-        />
         <Suspense fallback={<EarthOrbFallback pulsing />}>
           <LivingEarth
             health={health}
