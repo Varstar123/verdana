@@ -20,26 +20,6 @@ export function LeafIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
-/**
- * The Verdana brand glyph — a single filled leaf with a stem. Matches the
- * app/tab icon (src/app/icon.svg). Inherits color via `currentColor`, so it
- * reads white inside the green Logo tile and adapts in light mode.
- */
-export function LeafMark(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...props}>
-      <path d="M14.25 4.1C8.25 6 7.1 12.75 9.75 17.25C15 13.5 17.25 7.5 14.25 4.1Z" />
-      <path
-        d="M9.9 16.5 L8.25 19.5"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={1.7}
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
 export function TreeIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <svg

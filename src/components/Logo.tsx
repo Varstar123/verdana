@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { LeafMark } from "@/components/icons";
+import { LeafIcon } from "@/components/icons";
 
 export function Logo({ light = false }: { light?: boolean }) {
   return (
@@ -15,7 +15,7 @@ export function Logo({ light = false }: { light?: boolean }) {
             : "bg-forest-600 text-white group-hover:bg-forest-700"
         }`}
       >
-        <LeafMark className="h-5 w-5" />
+        <LeafIcon className="h-5 w-5" />
       </span>
       <span
         className={`font-serif text-xl tracking-tight ${
