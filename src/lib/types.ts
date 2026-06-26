@@ -252,3 +252,23 @@ export interface FeedPost {
   createdAt: string; // display label e.g. "2h", "now"
 }
 
+export interface ForumCategory {
+  id: string;
+  name: string;
+  emoji: string;
+}
+
+export interface ForumThread {
+  id: string;
+  categoryId: string;
+  title: string;
+  body: string;
+  authorName: string;
+  authorHue: number;
+  authorPlanetId: string;
+  votes: number;
+  myVote: number; // -1, 0, 1
+  comments: FeedComment[];
+  createdAt: string;
+}
+

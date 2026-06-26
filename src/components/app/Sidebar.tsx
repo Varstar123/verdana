@@ -18,7 +18,7 @@ const nav = [
   { href: "/earth", label: "My Earth", icon: GlobeIcon },
   { href: "/leaderboard", label: "Leaderboard", icon: TrophyIcon },
   { href: "/community", label: "Community", icon: UsersIcon },
-  { href: "/forums", label: "Forums", icon: CompassIcon, soon: true },
+  { href: "/forums", label: "Forums", icon: CompassIcon },
   { href: "/challenges", label: "Challenges", icon: TargetIcon, soon: true },
 ];
 
