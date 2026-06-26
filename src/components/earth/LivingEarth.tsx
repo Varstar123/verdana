@@ -4,12 +4,7 @@ import { useMemo, useRef } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, useTexture } from "@react-three/drei";
 import * as THREE from "three";
-import {
-  shellVertex,
-  atmosphereFragment,
-  cloudVertex,
-  cloudFragment,
-} from "@/components/earth/earthShaders";
+import { cloudVertex, cloudFragment } from "@/components/earth/earthShaders";
 
 // Sun direction (drives the scene light + atmosphere + cloud shading).
 const SUN = new THREE.Vector3(5, 2.2, 4).normalize();
@@ -40,33 +35,22 @@ function Earth({ health }: { health: number }) {
     }
   }, [day, normal, specular]);
 
-  // Procedural cloud + atmosphere shaders.
-  const { cloudMat, atmoMat } = useMemo(() => {
-    const cloudMat = new THREE.ShaderMaterial({
-      vertexShader: cloudVertex,
-      fragmentShader: cloudFragment,
-      transparent: true,
-      depthWrite: false,
-      uniforms: {
-        uHealth: { value: 0.6 },
-        uTime: { value: 0 },
-        uLightDir: { value: new THREE.Vector3().copy(SUN) },
-      },
-    });
-    const atmoMat = new THREE.ShaderMaterial({
-      vertexShader: shellVertex,
-      fragmentShader: atmosphereFragment,
-      transparent: true,
-      side: THREE.BackSide,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-      uniforms: {
-        uHealth: { value: 0.6 },
-        uLightDir: { value: new THREE.Vector3().copy(SUN) },
-      },
-    });
-    return { cloudMat, atmoMat };
-  }, []);
+  // Procedural cloud shader.
+  const cloudMat = useMemo(
+    () =>
+      new THREE.ShaderMaterial({
+        vertexShader: cloudVertex,
+        fragmentShader: cloudFragment,
+        transparent: true,
+        depthWrite: false,
+        uniforms: {
+          uHealth: { value: 0.6 },
+          uTime: { value: 0 },
+          uLightDir: { value: new THREE.Vector3().copy(SUN) },
+        },
+      }),
+    [],
+  );
 
   const target = Math.min(1, Math.max(0, health / 100));
   const targetRef = useRef(target);
@@ -76,7 +60,6 @@ function Earth({ health }: { health: number }) {
     const d = Math.min(0.05, delta);
     const ease = Math.min(1, d * 1.4);
     cloudMat.uniforms.uHealth.value += (targetRef.current - cloudMat.uniforms.uHealth.value) * ease;
-    atmoMat.uniforms.uHealth.value += (targetRef.current - atmoMat.uniforms.uHealth.value) * ease;
     cloudMat.uniforms.uTime.value += d;
 
     if (earthRef.current) earthRef.current.rotation.y += d * 0.045;
@@ -107,11 +90,6 @@ function Earth({ health }: { health: number }) {
           <sphereGeometry args={[1, 128, 128]} />
         </mesh>
       </group>
-
-      {/* Atmospheric rim */}
-      <mesh material={atmoMat} scale={1.16}>
-        <sphereGeometry args={[1, 128, 128]} />
-      </mesh>
     </>
   );
 }
