@@ -28,3 +28,13 @@ export const isFirebaseAdminConfigured = Boolean(
 export const CLERK_PUBLISHABLE_KEY =
   process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ?? "";
 export const isClerkConfigured = Boolean(CLERK_PUBLISHABLE_KEY);
+
+/**
+ * Emails that automatically get admin access (comma-separated, server-only).
+ * These users skip the need for Clerk publicMetadata role and are routed
+ * straight to /admin on sign-in.
+ */
+export const ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? "")
+  .split(",")
+  .map((e) => e.trim().toLowerCase())
+  .filter(Boolean);

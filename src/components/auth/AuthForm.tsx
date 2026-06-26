@@ -33,14 +33,14 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
           <SignUp
             routing="hash"
             signInUrl="/login"
-            fallbackRedirectUrl="/dashboard"
+            fallbackRedirectUrl="/start"
             appearance={appearance}
           />
         ) : (
           <SignIn
             routing="hash"
             signUpUrl="/signup"
-            fallbackRedirectUrl="/dashboard"
+            fallbackRedirectUrl="/start"
             appearance={appearance}
           />
         )}

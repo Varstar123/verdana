@@ -1,6 +1,6 @@
 import "server-only";
 import type { Profile } from "@/lib/types";
-import { isClerkConfigured } from "@/lib/env";
+import { isClerkConfigured, ADMIN_EMAILS } from "@/lib/env";
 import { DEMO_PROFILE } from "@/lib/community";
 
 export interface Session {
@@ -40,12 +40,14 @@ export async function getSession(): Promise<Session> {
       [user?.firstName, user?.lastName].filter(Boolean).join(" ") ||
       user?.username ||
       "Verdana Citizen";
+    const email = user?.primaryEmailAddress?.emailAddress?.toLowerCase() ?? "";
     const username =
       user?.username ||
-      user?.primaryEmailAddress?.emailAddress?.split("@")[0] ||
+      email.split("@")[0] ||
       `citizen-${userId.slice(-5)}`;
     const isAdmin =
-      (user?.publicMetadata as { role?: string } | undefined)?.role === "admin";
+      (user?.publicMetadata as { role?: string } | undefined)?.role === "admin" ||
+      (email !== "" && ADMIN_EMAILS.includes(email));
 
     let profile: Profile = {
       ...DEMO_PROFILE,
