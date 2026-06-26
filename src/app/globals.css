@@ -1,0 +1,164 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ----------------------------------------------------------------------------
+   Theme tokens — RGB triplets consumed by Tailwind's <alpha-value> colors.
+   Light is the default; .dark overrides. Managed by next-themes (class strategy).
+---------------------------------------------------------------------------- */
+:root {
+  --canvas: 247 249 247; /* app background */
+  --surface: 255 255 255; /* cards */
+  --elevated: 255 255 255; /* popovers */
+  --hairline: 18 38 26; /* borders (low alpha in use) */
+  --ink: 12 28 18; /* primary text */
+  --muted: 71 92 80; /* secondary text */
+  --faint: 120 139 128; /* tertiary text */
+  --brand: 19 132 69; /* forest-600 */
+  --glass: 255 255 255;
+  --glass-alpha: 0.65;
+  color-scheme: light;
+}
+
+.dark {
+  --canvas: 6 12 10;
+  --surface: 13 22 18;
+  --elevated: 18 28 23;
+  --hairline: 180 220 195;
+  --ink: 233 244 237;
+  --muted: 160 180 168;
+  --faint: 110 130 118;
+  --brand: 67 184 110; /* forest-400 for contrast on dark */
+  --glass: 16 26 21;
+  --glass-alpha: 0.55;
+  color-scheme: dark;
+}
+
+@layer base {
+  * {
+    border-color: rgb(var(--hairline) / 0.12);
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: rgb(var(--canvas));
+    color: rgb(var(--ink));
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background-color: rgb(var(--brand) / 0.25);
+  }
+
+  /* Refined scrollbar */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: rgb(var(--ink) / 0.18);
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: rgb(var(--ink) / 0.3);
+  }
+}
+
+@layer components {
+  .container-px {
+    @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+  }
+
+  /* Glassmorphism surface */
+  .glass {
+    background-color: rgb(var(--glass) / var(--glass-alpha));
+    backdrop-filter: blur(16px) saturate(160%);
+    -webkit-backdrop-filter: blur(16px) saturate(160%);
+    border: 1px solid rgb(var(--hairline) / 0.12);
+  }
+
+  .card {
+    @apply rounded-3xl border border-hairline/10 bg-surface/90 shadow-glass;
+  }
+
+  .card-glass {
+    @apply glass rounded-3xl shadow-glass;
+  }
+
+  .eyebrow {
+    @apply text-xs font-semibold uppercase tracking-[0.18em] text-brand;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5
+      text-sm font-semibold transition-all duration-200 focus:outline-none
+      focus-visible:ring-2 focus-visible:ring-brand/60 focus-visible:ring-offset-2
+      focus-visible:ring-offset-canvas disabled:cursor-not-allowed disabled:opacity-60;
+  }
+  .btn-primary {
+    @apply btn bg-brand text-white shadow-glow hover:brightness-110 active:scale-[0.98];
+  }
+  .btn-secondary {
+    @apply btn border border-hairline/15 bg-surface text-ink hover:border-brand/40 hover:bg-brand/5;
+  }
+  .btn-ghost {
+    @apply btn text-muted hover:bg-ink/5 hover:text-ink;
+  }
+
+  /* Gradient text */
+  .text-gradient {
+    @apply bg-brand-gradient bg-clip-text text-transparent;
+  }
+
+  /* Aurora field background (place absolutely behind content) */
+  .aurora-bg {
+    @apply pointer-events-none absolute inset-0 -z-10 overflow-hidden;
+  }
+  .aurora-bg::before {
+    content: "";
+    @apply absolute inset-[-20%] bg-aurora-1 opacity-70 blur-3xl animate-aurora-shift;
+  }
+
+  /* Stat number */
+  .stat-value {
+    @apply font-display text-3xl font-semibold tracking-tight text-ink;
+  }
+
+  /* Subtle skeleton shimmer block */
+  .skeleton {
+    @apply relative overflow-hidden rounded-xl bg-ink/5;
+  }
+  .skeleton::after {
+    content: "";
+    @apply absolute inset-0 -translate-x-full animate-shimmer
+      bg-gradient-to-r from-transparent via-white/20 to-transparent;
+  }
+}
+
+@layer utilities {
+  .ring-hairline {
+    --tw-ring-color: rgb(var(--hairline) / 0.12);
+  }
+  /* Legacy (V1) decorative overlay used by the original commerce pages. */
+  .leaf-grain {
+    background-image: radial-gradient(
+        circle at 20% 20%,
+        rgba(159, 220, 177, 0.18),
+        transparent 35%
+      ),
+      radial-gradient(circle at 80% 0%, rgba(19, 132, 69, 0.12), transparent 40%);
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}

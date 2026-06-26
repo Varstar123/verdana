@@ -1,0 +1,159 @@
+// Verdana data model — target schema (PostgreSQL + PostGIS).
+//
+// This file documents the production data model from the blueprint. The scaffold
+// currently runs on the in-memory mock layer in src/lib/data.ts. To go live:
+//   1. npm i -D prisma && npm i @prisma/client
+//   2. Set DATABASE_URL in .env (see .env.example)
+//   3. npx prisma migrate dev --name init
+//   4. Replace the query helpers in src/lib/data.ts with Prisma calls.
+//
+// Geospatial columns (lat/lon) are modeled as Float here for portability; in
+// production use the PostGIS `geography(Point, 4326)` type via a raw migration
+// for proper spatial indexing and radius queries.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum TreeStatus {
+  ordered
+  planted
+  growing
+  at_risk
+  lost
+}
+
+enum OrderStatus {
+  reserved
+  paid
+  invoiced
+  cancelled
+}
+
+model User {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  name        String?
+  displayName String?
+  preferences Json?
+  createdAt   DateTime @default(now())
+
+  trees     TreeRecord[]
+  orders    Order[]
+  badges    UserBadge[]
+  companyId String?
+  company   Company?     @relation(fields: [companyId], references: [id])
+}
+
+model Company {
+  id        String   @id @default(cuid())
+  name      String
+  domain    String?  @unique
+  createdAt DateTime @default(now())
+
+  users  User[]
+  orders Order[]
+}
+
+model PlantingLocation {
+  id           String   @id @default(cuid())
+  name         String
+  country      String
+  region       String
+  biome        String
+  lat          Float
+  lon          Float
+  pricePerTree Int // USD cents recommended in production
+  species      String[]
+  description  String
+  partner      String
+  treesNeeded  Int
+  treesPlanted Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  trees    TreeRecord[]
+  projects Project[]    @relation("ProjectLocation")
+}
+
+model Project {
+  id         String   @id @default(cuid())
+  name       String
+  locationId String
+  location   PlantingLocation @relation("ProjectLocation", fields: [locationId], references: [id])
+  startedAt  DateTime @default(now())
+
+  trees TreeRecord[]
+
+  @@map("projects")
+}
+
+model TreeRecord {
+  treeId     String     @id @default(cuid())
+  userId     String
+  user       User       @relation(fields: [userId], references: [id])
+  locationId String
+  location   PlantingLocation @relation(fields: [locationId], references: [id])
+  projectId  String?
+  project    Project?   @relation(fields: [projectId], references: [id])
+
+  species   String
+  status    TreeStatus @default(ordered)
+  lat       Float
+  lon       Float
+  plantedAt DateTime?
+  photoUrl  String?
+  heightCm  Float      @default(0)
+  carbonKg  Float      @default(0)
+  ledgerRef String?
+
+  monitoringEvents MonitoringEvent[]
+  createdAt        DateTime          @default(now())
+}
+
+model MonitoringEvent {
+  id        String     @id @default(cuid())
+  treeId    String
+  tree      TreeRecord @relation(fields: [treeId], references: [treeId])
+  source    String // "field" | "satellite" | "drone"
+  ndvi      Float?
+  heightCm  Float?
+  photoUrl  String?
+  note      String?
+  observedAt DateTime  @default(now())
+}
+
+model Order {
+  id        String      @id @default(cuid())
+  userId    String?
+  user      User?       @relation(fields: [userId], references: [id])
+  companyId String?
+  company   Company?    @relation(fields: [companyId], references: [id])
+  treeQty   Int
+  totalUsd  Int
+  status    OrderStatus @default(reserved)
+  isGift    Boolean     @default(false)
+  createdAt DateTime    @default(now())
+}
+
+model Badge {
+  badgeId     String      @id
+  name        String
+  description String
+  criteria    String?
+  users       UserBadge[]
+}
+
+model UserBadge {
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  badgeId    String
+  badge      Badge    @relation(fields: [badgeId], references: [badgeId])
+  achievedAt DateTime @default(now())
+
+  @@id([userId, badgeId])
+}
