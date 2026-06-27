@@ -107,7 +107,9 @@ export default function LivingEarth({
     <Canvas
       className={className}
       dpr={[1, 2]}
-      camera={{ position: [0, 0, 3.2], fov: 36 }}
+      // Pull back a touch in the large interactive view so the globe stays
+      // framed inside its card; the tight 3.2 keeps the small embeds full.
+      camera={{ position: [0, 0, interactive ? 3.8 : 3.2], fov: 36 }}
       gl={{ antialias: true, alpha: true }}
       onCreated={({ gl }) => {
         gl.toneMappingExposure = 1.05;
@@ -126,8 +128,8 @@ export default function LivingEarth({
         enablePan={false}
         enableZoom={interactive}
         enableRotate={interactive}
-        minDistance={1.7}
-        maxDistance={5}
+        minDistance={interactive ? 2.6 : 1.7}
+        maxDistance={interactive ? 6 : 5}
         enableDamping
         dampingFactor={0.08}
         rotateSpeed={0.5}

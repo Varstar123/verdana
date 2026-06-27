@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import {
   getProfileByPlanetId,
@@ -22,6 +23,7 @@ import { getSession } from "@/lib/session";
 import { isFirebaseAdminConfigured } from "@/lib/env";
 import { getFollowState } from "@/app/(app)/social-actions";
 import { getProfileByPlanetIdFromDb } from "@/lib/firebase/profiles";
+import { ProfileSkeleton } from "@/components/app/Skeletons";
 import {
   StarIcon,
   MapPinIcon,
@@ -55,6 +57,14 @@ export default async function ProfilePage({
   params: Promise<{ planetId: string }>;
 }) {
   const { planetId } = await params;
+  return (
+    <Suspense fallback={<ProfileSkeleton />}>
+      <ProfileContent planetId={planetId} />
+    </Suspense>
+  );
+}
+
+async function ProfileContent({ planetId }: { planetId: string }) {
   let profile = getProfileByPlanetId(planetId);
   if (!profile && isFirebaseAdminConfigured) {
     profile = (await getProfileByPlanetIdFromDb(planetId)) ?? undefined;
@@ -94,22 +104,22 @@ export default async function ProfilePage({
 
       <div className="container-px">
         {/* Header */}
-        <div className="-mt-14 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div className="flex items-end gap-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
             <Avatar
               name={profile.displayName}
               hue={profile.avatarHue}
               size={104}
-              className="ring-4 ring-canvas"
+              className="-mt-12 ring-4 ring-canvas sm:-mt-16"
             />
-            <div className="pb-1">
+            <div className="mt-3">
               <h1 className="font-display text-2xl font-semibold text-ink">
                 {profile.displayName}
               </h1>
               <p className="font-mono text-sm text-faint">{profile.planetId}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2 pb-1">
+          <div className="flex items-center gap-2">
             {!isYou && (
               <FollowButton
                 targetPlanetId={profile.planetId}
@@ -174,7 +184,7 @@ export default async function ProfilePage({
         <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_1.3fr]">
           {/* Earth */}
           <div className="card-glass relative overflow-hidden p-6">
-            <p className="eyebrow">Their living Earth</p>
+            <p className="eyebrow">{isYou ? "Your" : "Their"} living Earth</p>
             <div className="mx-auto my-3 h-56 w-56">
               <EarthScene health={health} interactive={false} />
             </div>

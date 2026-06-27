@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { getSession } from "@/lib/session";
 import {
   LEVELS,
@@ -8,43 +9,34 @@ import {
   formatCompact,
 } from "@/lib/scoring";
 import { CheckIcon, LockIcon, StarIcon } from "@/components/icons";
+import { RewardsSkeleton } from "@/components/app/Skeletons";
 
 export const metadata: Metadata = { title: "Levels & Rewards" };
 
-export default async function RewardsPage() {
+async function RewardsContent() {
   const { profile } = await getSession();
   const ecoScore = computeEcoScore(profile.stats);
   const level = getLevel(ecoScore);
 
   return (
-    <div className="container-px py-8">
-      <header className="mb-6">
-        <p className="eyebrow">Levels &amp; rewards</p>
-        <h1 className="mt-1 font-display text-3xl font-semibold tracking-tight text-ink">
-          Grow your impact, unlock the planet
-        </h1>
-        <p className="mt-2 max-w-2xl text-muted">
-          Every eco-point moves you up the ranks. Each level unlocks new themes,
-          profile decorations, and upgrades to your living Earth.
-        </p>
-        <div className="mt-4 inline-flex items-center gap-3 rounded-2xl bg-surface px-4 py-2 ring-1 ring-inset ring-hairline/12">
-          <span
-            className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-semibold text-white"
-            style={{ background: level.accent }}
-          >
-            <StarIcon className="h-3.5 w-3.5" /> Lv {level.index + 1} · {level.name}
-          </span>
-          <span className="text-sm text-muted">
-            {formatCompact(ecoScore)} eco-points
-            {level.nextScore && (
-              <span className="text-faint">
-                {" "}
-                · {formatCompact(level.nextScore - ecoScore)} to next
-              </span>
-            )}
-          </span>
-        </div>
-      </header>
+    <>
+      <div className="mt-4 inline-flex items-center gap-3 rounded-2xl bg-surface px-4 py-2 ring-1 ring-inset ring-hairline/12">
+        <span
+          className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-semibold text-white"
+          style={{ background: level.accent }}
+        >
+          <StarIcon className="h-3.5 w-3.5" /> Lv {level.index + 1} · {level.name}
+        </span>
+        <span className="text-sm text-muted">
+          {formatCompact(ecoScore)} eco-points
+          {level.nextScore && (
+            <span className="text-faint">
+              {" "}
+              · {formatCompact(level.nextScore - ecoScore)} to next
+            </span>
+          )}
+        </span>
+      </div>
 
       <ol className="space-y-3">
         {LEVELS.map((lv, i) => {
@@ -109,6 +101,27 @@ export default async function RewardsPage() {
           );
         })}
       </ol>
+    </>
+  );
+}
+
+export default function RewardsPage() {
+  return (
+    <div className="container-px py-8">
+      <header className="mb-6">
+        <p className="eyebrow">Levels &amp; rewards</p>
+        <h1 className="mt-1 font-display text-3xl font-semibold tracking-tight text-ink">
+          Grow your impact, unlock the planet
+        </h1>
+        <p className="mt-2 max-w-2xl text-muted">
+          Every eco-point moves you up the ranks. Each level unlocks new themes,
+          profile decorations, and upgrades to your living Earth.
+        </p>
+      </header>
+
+      <Suspense fallback={<RewardsSkeleton />}>
+        <RewardsContent />
+      </Suspense>
     </div>
   );
 }

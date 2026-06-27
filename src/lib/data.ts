@@ -256,7 +256,7 @@ export function getUserStats(userId: string = DEMO_USER_ID): UserStats {
 
   return {
     userId,
-    displayName: "Alex Rivera",
+    displayName: "Varstar",
     totalTrees: trees.length,
     totalCarbonKg: Math.round(totalCarbonKg * 10) / 10,
     // ~9 m² canopy footprint per maturing tree (illustrative).

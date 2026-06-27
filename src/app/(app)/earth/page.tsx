@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { getSession } from "@/lib/session";
 import {
   computeEcoScore,
@@ -8,23 +9,33 @@ import {
 } from "@/lib/scoring";
 import { EarthScene } from "@/components/earth/EarthScene";
 import { CheckIcon, LockIcon, GlobeIcon } from "@/components/icons";
+import { EarthSkeleton } from "@/components/app/Skeletons";
 
 export const metadata: Metadata = { title: "My Earth" };
 
-export default async function EarthPage() {
+export default function EarthPage() {
+  return (
+    <div className="relative min-h-[calc(100vh-4rem)]">
+      <div className="aurora-bg opacity-60" />
+
+      <Suspense fallback={<EarthSkeleton />}>
+        <EarthContent />
+      </Suspense>
+    </div>
+  );
+}
+
+async function EarthContent() {
   const { profile } = await getSession();
   const ecoScore = computeEcoScore(profile.stats);
   const health = computeEarthHealth(ecoScore);
   const { index: currentIndex } = getEarthStage(health);
 
   return (
-    <div className="relative min-h-[calc(100vh-4rem)]">
-      <div className="aurora-bg opacity-60" />
-
-      <div className="container-px grid gap-6 py-8 lg:grid-cols-[1.6fr_1fr]">
+    <div className="container-px grid gap-6 py-8 lg:grid-cols-[1.6fr_1fr]">
         {/* Earth canvas */}
-        <div className="card-glass relative overflow-hidden">
-          <div className="absolute left-5 top-5 z-10">
+        <div className="card-glass relative h-[clamp(440px,62vh,660px)] overflow-hidden">
+          <div className="pointer-events-none absolute left-5 top-5 z-10">
             <p className="eyebrow">{profile.planetId}</p>
             <h1 className="mt-1 font-display text-2xl font-semibold text-ink">
               {profile.displayName}&apos;s Earth
@@ -34,7 +45,9 @@ export default async function EarthPage() {
             drag to rotate · scroll to zoom
           </div>
 
-          <div className="h-[58vh] min-h-[420px] w-full">
+          {/* Canvas fills the card; camera framing (see LivingEarth) keeps the
+              globe clear of the overlays so nothing spills past the container. */}
+          <div className="absolute inset-0">
             <EarthScene health={health} interactive />
           </div>
 
@@ -107,6 +120,5 @@ export default async function EarthPage() {
           </ol>
         </div>
       </div>
-    </div>
   );
 }

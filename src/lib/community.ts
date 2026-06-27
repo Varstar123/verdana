@@ -124,8 +124,8 @@ demoStats.ecoPoints = computeEcoScore(demoStats);
 export const DEMO_PROFILE: Profile = {
   id: "demo-user",
   planetId: "VER-582931",
-  username: "alexrivera",
-  displayName: "Alex Rivera",
+  username: "varstar",
+  displayName: "Varstar",
   avatarHue: 152,
   bio: "Citizen of a greener Earth. Planting, recycling, and racing up the leaderboard. 🌱",
   location: "San Francisco",

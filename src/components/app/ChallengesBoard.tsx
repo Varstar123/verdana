@@ -53,7 +53,7 @@ export function ChallengesBoard({
       /* ignore */
     }
     if (persisted) {
-      startTransition(() => void completeChallengeAction(c.id, c.rewardXp));
+      startTransition(() => void completeChallengeAction(c.id));
     }
   }
 

@@ -122,7 +122,7 @@ export interface PostAuthor {
   planetId: string;
 }
 
-export async function getFeed(): Promise<FeedPost[]> {
+export async function getFeed(userId?: string | null): Promise<FeedPost[]> {
   if (isFirebaseAdminConfigured) {
     try {
       const { getAdminDb } = await import("@/lib/firebase/admin");
@@ -133,7 +133,14 @@ export async function getFeed(): Promise<FeedPost[]> {
           .orderBy("ts", "desc")
           .limit(50)
           .get();
-        if (!snap.empty) return snap.docs.map((doc) => mapDoc(doc.id, doc.data()));
+        if (!snap.empty) {
+          const liked = userId ? await getLikedPostIds(userId) : new Set<string>();
+          return snap.docs.map((doc) => {
+            const post = mapDoc(doc.id, doc.data());
+            post.likedByMe = liked.has(doc.id);
+            return post;
+          });
+        }
       }
     } catch {
       // fall through to demo
@@ -186,29 +193,69 @@ export async function createPost(
   return post;
 }
 
-export async function likePost(postId: string, delta: number): Promise<void> {
+/**
+ * Set whether `userId` likes `postId`. One like per user per post, enforced in a
+ * transaction against a `postLikes/{userId}_{postId}` marker, so the like counter
+ * can only move by ±1 per user and cannot be inflated by replaying the action.
+ */
+export async function setPostLike(
+  userId: string,
+  postId: string,
+  liked: boolean,
+): Promise<void> {
   if (!isFirebaseAdminConfigured) return;
   try {
     const { getAdminDb } = await import("@/lib/firebase/admin");
     const { FieldValue } = await import("firebase-admin/firestore");
     const db = getAdminDb();
-    if (db) {
-      await db
-        .collection("posts")
-        .doc(postId)
-        .update({ likes: FieldValue.increment(delta) });
-    }
+    if (!db) return;
+    const likeRef = db.collection("postLikes").doc(`${userId}_${postId}`);
+    const postRef = db.collection("posts").doc(postId);
+    await db.runTransaction(async (tx) => {
+      // Reads before writes. Skip seeded/placeholder posts that aren't real docs
+      // (update() on a missing doc would throw NOT_FOUND and abort the tx).
+      const postSnap = await tx.get(postRef);
+      if (!postSnap.exists) return;
+      const already = (await tx.get(likeRef)).exists;
+      if (liked && !already) {
+        tx.set(likeRef, { userId, postId, ts: Date.now() });
+        tx.update(postRef, { likes: FieldValue.increment(1) });
+      } else if (!liked && already) {
+        tx.delete(likeRef);
+        tx.update(postRef, { likes: FieldValue.increment(-1) });
+      }
+    });
   } catch {
     /* no-op in demo */
   }
 }
 
+/** Post ids the user has liked, from the postLikes markers (to render like state). */
+export async function getLikedPostIds(userId: string): Promise<Set<string>> {
+  if (!isFirebaseAdminConfigured) return new Set();
+  try {
+    const { getAdminDb } = await import("@/lib/firebase/admin");
+    const db = getAdminDb();
+    if (!db) return new Set();
+    const snap = await db
+      .collection("postLikes")
+      .where("userId", "==", userId)
+      .limit(500)
+      .get();
+    return new Set(snap.docs.map((d) => d.data().postId as string));
+  } catch {
+    return new Set();
+  }
+}
+
+/** Adds a comment and returns its id (the same id stored in Firestore). */
 export async function commentOnPost(
   postId: string,
   author: PostAuthor,
   body: string,
-): Promise<void> {
-  if (!isFirebaseAdminConfigured) return;
+): Promise<string> {
+  const id = `c-${crypto.randomUUID()}`;
+  if (!isFirebaseAdminConfigured) return id;
   try {
     const { getAdminDb } = await import("@/lib/firebase/admin");
     const { FieldValue } = await import("firebase-admin/firestore");
@@ -219,7 +266,7 @@ export async function commentOnPost(
         .doc(postId)
         .update({
           comments: FieldValue.arrayUnion({
-            id: `c-${Date.now()}`,
+            id,
             authorName: author.name,
             authorHue: author.hue,
             authorPlanetId: author.planetId,
@@ -231,4 +278,5 @@ export async function commentOnPost(
   } catch {
     /* no-op in demo */
   }
+  return id;
 }

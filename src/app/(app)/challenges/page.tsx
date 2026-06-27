@@ -1,15 +1,27 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { getSession } from "@/lib/session";
 import { isFirebaseAdminConfigured } from "@/lib/env";
 import { DAILY_CHALLENGES } from "@/lib/community";
 import { ChallengesBoard } from "@/components/app/ChallengesBoard";
+import { ChallengesSkeleton } from "@/components/app/Skeletons";
 
 export const metadata: Metadata = { title: "Challenges" };
 
-export default async function ChallengesPage() {
+async function ChallengesContent() {
   const session = await getSession();
   const persisted = isFirebaseAdminConfigured;
 
+  return (
+    <ChallengesBoard
+      challenges={DAILY_CHALLENGES}
+      persisted={persisted}
+      streak={session.profile.stats.streakDays}
+    />
+  );
+}
+
+export default function ChallengesPage() {
   return (
     <div className="container-px py-8">
       <header className="mb-6">
@@ -23,11 +35,9 @@ export default async function ChallengesPage() {
         </p>
       </header>
 
-      <ChallengesBoard
-        challenges={DAILY_CHALLENGES}
-        persisted={persisted}
-        streak={session.profile.stats.streakDays}
-      />
+      <Suspense fallback={<ChallengesSkeleton />}>
+        <ChallengesContent />
+      </Suspense>
     </div>
   );
 }

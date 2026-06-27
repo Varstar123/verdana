@@ -32,7 +32,7 @@ export function Sidebar({ planetId }: { planetId: string }) {
   return (
     <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-hairline/10 bg-surface/60 px-4 py-6 lg:flex">
       <Link href="/dashboard" className="mb-8 flex items-center gap-2.5 px-2">
-        <span className="grid h-9 w-9 place-items-center rounded-xl bg-brand text-white shadow-glow">
+        <span className="grid h-9 w-9 place-items-center rounded-xl bg-brand text-white shadow-glow transition-colors dark:bg-forest-50 dark:text-forest-700 dark:shadow-none dark:ring-1 dark:ring-forest-200/60">
           <LeafIcon className="h-5 w-5" />
         </span>
         <span className="font-display text-xl font-semibold tracking-tight text-ink">

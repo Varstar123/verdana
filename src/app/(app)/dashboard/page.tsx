@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import Link from "next/link";
 import { getSession } from "@/lib/session";
 import {
@@ -35,10 +36,19 @@ import {
   StarIcon,
 } from "@/components/icons";
 import { BADGES } from "@/lib/scoring";
+import { DashboardSkeleton } from "@/components/app/Skeletons";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
-export default async function DashboardPage() {
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<DashboardSkeleton />}>
+      <DashboardContent />
+    </Suspense>
+  );
+}
+
+async function DashboardContent() {
   const { profile } = await getSession();
   const s = profile.stats;
   const ecoScore = computeEcoScore(s);

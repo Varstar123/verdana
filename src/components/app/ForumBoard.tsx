@@ -10,6 +10,7 @@ import {
   voteThreadAction,
   commentThreadAction,
 } from "@/app/(app)/forums/actions";
+import { THREAD_TITLE_MAX, THREAD_BODY_MAX, COMMENT_BODY_MAX } from "@/lib/limits";
 
 const LS_KEY = "verdana_forum_threads";
 
@@ -84,8 +85,12 @@ export function ForumBoard({
     setOpen(false);
     if (persisted) {
       startTransition(async () => {
-        const saved = await createThreadAction(composeCat, optimistic.title, optimistic.body);
-        setThreads((t) => t.map((x) => (x.id === optimistic.id ? saved : x)));
+        try {
+          const saved = await createThreadAction(composeCat, optimistic.title, optimistic.body);
+          setThreads((t) => t.map((x) => (x.id === optimistic.id ? saved : x)));
+        } catch {
+          /* keep the optimistic thread if the server rejects */
+        }
       });
     } else {
       saveLocal(optimistic);
@@ -93,17 +98,17 @@ export function ForumBoard({
   }
 
   function vote(id: string, dir: 1 | -1) {
-    let delta = 0;
+    let nextVote = 0;
     setThreads((ts) =>
       ts.map((t) => {
         if (t.id !== id) return t;
-        const nextVote = t.myVote === dir ? 0 : dir;
-        delta = nextVote - t.myVote;
-        return { ...t, myVote: nextVote, votes: t.votes + delta };
+        nextVote = t.myVote === dir ? 0 : dir;
+        return { ...t, myVote: nextVote, votes: t.votes + (nextVote - t.myVote) };
       }),
     );
-    if (persisted && !id.startsWith("tmp-") && delta !== 0) {
-      startTransition(() => void voteThreadAction(id, delta));
+    if (persisted && !id.startsWith("tmp-")) {
+      // Send the absolute vote state; the server applies only the difference.
+      startTransition(() => void voteThreadAction(id, nextVote));
     }
   }
 
@@ -120,7 +125,9 @@ export function ForumBoard({
       ts.map((t) => (t.id === id ? { ...t, comments: [...t.comments, c] } : t)),
     );
     if (persisted && !id.startsWith("tmp-")) {
-      startTransition(() => void commentThreadAction(id, text));
+      startTransition(() => {
+        commentThreadAction(id, text).catch(() => {});
+      });
     }
   }
 
@@ -145,6 +152,7 @@ export function ForumBoard({
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
+              maxLength={THREAD_TITLE_MAX}
               placeholder="Thread title"
               className="w-full rounded-xl border border-hairline/15 bg-surface px-3 py-2 text-sm font-medium text-ink outline-none focus:border-brand/50"
             />
@@ -152,6 +160,7 @@ export function ForumBoard({
               value={body}
               onChange={(e) => setBody(e.target.value)}
               rows={3}
+              maxLength={THREAD_BODY_MAX}
               placeholder="What's on your mind?"
               className="w-full resize-none rounded-xl border border-hairline/15 bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-brand/50"
             />
@@ -307,6 +316,7 @@ function CommentBox({ onSubmit }: { onSubmit: (text: string) => void }) {
       <input
         value={text}
         onChange={(e) => setText(e.target.value)}
+        maxLength={COMMENT_BODY_MAX}
         placeholder="Add a comment…"
         className="flex-1 rounded-full border border-hairline/15 bg-surface px-4 py-2 text-sm text-ink outline-none focus:border-brand/50"
       />

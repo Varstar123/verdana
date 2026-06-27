@@ -1,17 +1,22 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import { GLOBAL_STATS } from "@/lib/community";
 import { getActivity } from "@/lib/social";
 import { EarthScene } from "@/components/earth/EarthScene";
 import { LiveGlobeStats } from "@/components/app/LiveGlobeStats";
+import { GlobeStatsSkeleton } from "@/components/app/Skeletons";
 
 export const metadata: Metadata = { title: "Global Earth" };
 
 // The shared planet's health rises as the whole community contributes.
 const GLOBAL_HEALTH = 38;
 
-export default async function GlobePage() {
+async function GlobeStats() {
   const activity = await getActivity();
+  return <LiveGlobeStats initial={GLOBAL_STATS} activity={activity} />;
+}
 
+export default function GlobePage() {
   return (
     <div className="relative min-h-[calc(100vh-4rem)]">
       <div className="aurora-bg opacity-50" />
@@ -48,7 +53,9 @@ export default async function GlobePage() {
             </div>
           </div>
 
-          <LiveGlobeStats initial={GLOBAL_STATS} activity={activity} />
+          <Suspense fallback={<GlobeStatsSkeleton />}>
+            <GlobeStats />
+          </Suspense>
         </div>
       </div>
     </div>

@@ -11,6 +11,7 @@ import {
   likePostAction,
   commentAction,
 } from "@/app/(app)/community/actions";
+import { POST_BODY_MAX, COMMENT_BODY_MAX, extractHashtags } from "@/lib/limits";
 
 const LS_KEY = "verdana_demo_posts";
 
@@ -18,10 +19,6 @@ interface Me {
   name: string;
   hue: number;
   planetId: string;
-}
-
-function extractHashtags(text: string): string[] {
-  return Array.from(text.matchAll(/#(\w+)/g)).map((m) => m[1]).slice(0, 6);
 }
 
 function relLabel(ms: number): string {
@@ -93,7 +90,15 @@ export function CommunityFeed({
         const q = query(collection(db, "posts"), orderBy("ts", "desc"), limit(50));
         unsub = onSnapshot(q, (snap) => {
           if (snap.empty) return; // keep seeded initial until real posts exist
-          setPosts(snap.docs.map((d) => mapLiveDoc(d.id, d.data())));
+          // Preserve the viewer's own like state across live updates — the client
+          // can't read the (locked) postLikes markers, so carry it from prior state.
+          setPosts((prev) =>
+            snap.docs.map((d) => {
+              const post = mapLiveDoc(d.id, d.data());
+              const existing = prev.find((p) => p.id === d.id);
+              return existing ? { ...post, likedByMe: existing.likedByMe } : post;
+            }),
+          );
         });
       } catch {
         /* stay on server-rendered feed */
@@ -135,8 +140,12 @@ export function CommunityFeed({
 
     if (persisted) {
       startTransition(async () => {
-        const saved = await createPostAction(body, hashtags);
-        setPosts((p) => p.map((x) => (x.id === optimistic.id ? saved : x)));
+        try {
+          const saved = await createPostAction(body);
+          setPosts((p) => p.map((x) => (x.id === optimistic.id ? saved : x)));
+        } catch {
+          /* keep the optimistic post if the server rejects (e.g. signed out) */
+        }
       });
     } else {
       // demo: persist this user's posts locally
@@ -151,16 +160,17 @@ export function CommunityFeed({
   }
 
   function toggleLike(id: string) {
-    let delta = 0;
+    let nextLiked = false;
     setPosts((p) =>
       p.map((x) => {
         if (x.id !== id) return x;
-        delta = x.likedByMe ? -1 : 1;
-        return { ...x, likedByMe: !x.likedByMe, likes: x.likes + delta };
+        nextLiked = !x.likedByMe;
+        return { ...x, likedByMe: nextLiked, likes: x.likes + (nextLiked ? 1 : -1) };
       }),
     );
     if (persisted && !id.startsWith("tmp-")) {
-      startTransition(() => void likePostAction(id, delta));
+      // Send the desired like state; the server tracks per-user likes and ±1.
+      startTransition(() => void likePostAction(id, nextLiked));
     }
   }
 
@@ -175,6 +185,7 @@ export function CommunityFeed({
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               rows={2}
+              maxLength={POST_BODY_MAX}
               placeholder="Share an action, a win, a before/after… use #hashtags"
               className="w-full resize-none rounded-xl border border-hairline/15 bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-brand/50 focus:ring-2 focus:ring-brand/20"
             />
@@ -297,7 +308,9 @@ function CommentThread({
     );
     setText("");
     if (persisted && !post.id.startsWith("tmp-")) {
-      startTransition(() => void commentAction(post.id, body));
+      startTransition(() => {
+        commentAction(post.id, body).catch(() => {});
+      });
     }
   }
 
@@ -325,6 +338,7 @@ function CommentThread({
             <input
               value={text}
               onChange={(e) => setText(e.target.value)}
+              maxLength={COMMENT_BODY_MAX}
               placeholder="Add a comment…"
               className="flex-1 rounded-full border border-hairline/15 bg-surface px-4 py-2 text-sm text-ink outline-none focus:border-brand/50"
             />

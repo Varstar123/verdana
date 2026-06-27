@@ -141,7 +141,27 @@ export interface ThreadAuthor {
   planetId: string;
 }
 
-export async function getThreads(): Promise<ForumThread[]> {
+/** The user's vote per thread, from the forumVotes markers (to render vote state). */
+export async function getUserThreadVotes(userId: string): Promise<Map<string, number>> {
+  const votes = new Map<string, number>();
+  if (!isFirebaseAdminConfigured) return votes;
+  try {
+    const { getAdminDb } = await import("@/lib/firebase/admin");
+    const db = getAdminDb();
+    if (!db) return votes;
+    const snap = await db
+      .collection("forumVotes")
+      .where("userId", "==", userId)
+      .limit(500)
+      .get();
+    for (const d of snap.docs) votes.set(d.data().threadId as string, Number(d.data().vote ?? 0));
+    return votes;
+  } catch {
+    return votes;
+  }
+}
+
+export async function getThreads(userId?: string | null): Promise<ForumThread[]> {
   if (isFirebaseAdminConfigured) {
     try {
       const { getAdminDb } = await import("@/lib/firebase/admin");
@@ -152,7 +172,14 @@ export async function getThreads(): Promise<ForumThread[]> {
           .orderBy("ts", "desc")
           .limit(80)
           .get();
-        if (!snap.empty) return snap.docs.map((doc) => mapDoc(doc.id, doc.data()));
+        if (!snap.empty) {
+          const myVotes = userId ? await getUserThreadVotes(userId) : new Map<string, number>();
+          return snap.docs.map((doc) => {
+            const thread = mapDoc(doc.id, doc.data());
+            thread.myVote = myVotes.get(doc.id) ?? 0;
+            return thread;
+          });
+        }
       }
     } catch {
       /* fall through */
@@ -163,6 +190,7 @@ export async function getThreads(): Promise<ForumThread[]> {
 
 export async function createThread(
   author: ThreadAuthor,
+  authorUserId: string | null,
   categoryId: string,
   title: string,
   body: string,
@@ -186,7 +214,11 @@ export async function createThread(
       const { getAdminDb } = await import("@/lib/firebase/admin");
       const db = getAdminDb();
       if (db) {
-        const ref = await db.collection("forumThreads").add({
+        // Pre-generate the id so the author's implicit upvote marker matches the
+        // votes:1 seed — keeping votes == sum(markers) so the count can't drift.
+        const threadRef = db.collection("forumThreads").doc();
+        const batch = db.batch();
+        batch.set(threadRef, {
           categoryId,
           title,
           body,
@@ -197,7 +229,16 @@ export async function createThread(
           comments: [],
           ts,
         });
-        thread.id = ref.id;
+        if (authorUserId) {
+          batch.set(db.collection("forumVotes").doc(`${authorUserId}_${threadRef.id}`), {
+            userId: authorUserId,
+            threadId: threadRef.id,
+            vote: 1,
+            ts,
+          });
+        }
+        await batch.commit();
+        thread.id = threadRef.id;
       }
     } catch {
       /* demo echo */
@@ -206,29 +247,51 @@ export async function createThread(
   return thread;
 }
 
-export async function voteThread(id: string, delta: number): Promise<void> {
+/**
+ * Set `userId`'s vote on a thread to one of {-1, 0, 1}. The server records each
+ * user's current vote in `forumVotes/{userId}_{threadId}` and applies only the
+ * difference in a transaction, so a user can shift the score by at most one vote
+ * and replays are idempotent — the count cannot be inflated from the client.
+ */
+export async function setThreadVote(
+  userId: string,
+  threadId: string,
+  vote: number,
+): Promise<void> {
   if (!isFirebaseAdminConfigured) return;
+  const v = vote > 0 ? 1 : vote < 0 ? -1 : 0; // clamp to {-1, 0, 1}
   try {
     const { getAdminDb } = await import("@/lib/firebase/admin");
     const { FieldValue } = await import("firebase-admin/firestore");
     const db = getAdminDb();
-    if (db) {
-      await db
-        .collection("forumThreads")
-        .doc(id)
-        .update({ votes: FieldValue.increment(delta) });
-    }
+    if (!db) return;
+    const voteRef = db.collection("forumVotes").doc(`${userId}_${threadId}`);
+    const threadRef = db.collection("forumThreads").doc(threadId);
+    await db.runTransaction(async (tx) => {
+      // Reads before writes. Skip seeded/placeholder threads that aren't real docs.
+      const threadSnap = await tx.get(threadRef);
+      if (!threadSnap.exists) return;
+      const snap = await tx.get(voteRef);
+      const prev = snap.exists ? Number(snap.data()?.vote ?? 0) : 0;
+      const delta = v - prev;
+      if (delta === 0) return;
+      if (v === 0) tx.delete(voteRef);
+      else tx.set(voteRef, { userId, threadId, vote: v, ts: Date.now() });
+      tx.update(threadRef, { votes: FieldValue.increment(delta) });
+    });
   } catch {
     /* no-op */
   }
 }
 
+/** Adds a comment and returns its id (the same id stored in Firestore). */
 export async function commentOnThread(
   id: string,
   author: ThreadAuthor,
   body: string,
-): Promise<void> {
-  if (!isFirebaseAdminConfigured) return;
+): Promise<string> {
+  const commentId = `c-${crypto.randomUUID()}`;
+  if (!isFirebaseAdminConfigured) return commentId;
   try {
     const { getAdminDb } = await import("@/lib/firebase/admin");
     const { FieldValue } = await import("firebase-admin/firestore");
@@ -239,7 +302,7 @@ export async function commentOnThread(
         .doc(id)
         .update({
           comments: FieldValue.arrayUnion({
-            id: `c-${Date.now()}`,
+            id: commentId,
             authorName: author.name,
             authorHue: author.hue,
             authorPlanetId: author.planetId,
@@ -251,4 +314,5 @@ export async function commentOnThread(
   } catch {
     /* no-op */
   }
+  return commentId;
 }

@@ -1,16 +1,35 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import { getSession } from "@/lib/session";
+import { getWriterId } from "@/lib/auth";
 import { getThreads, FORUM_CATEGORIES } from "@/lib/forums";
 import { isFirebaseAdminConfigured } from "@/lib/env";
 import { ForumBoard } from "@/components/app/ForumBoard";
+import { ForumsSkeleton } from "@/components/app/Skeletons";
 
 export const metadata: Metadata = { title: "Forums" };
 
-export default async function ForumsPage() {
-  const [session, threads] = await Promise.all([getSession(), getThreads()]);
+async function ForumsContent() {
+  const [session, uid] = await Promise.all([getSession(), getWriterId()]);
+  const threads = await getThreads(uid);
   const { profile } = session;
   const persisted = isFirebaseAdminConfigured;
 
+  return (
+    <ForumBoard
+      initial={threads}
+      categories={FORUM_CATEGORIES}
+      me={{
+        name: profile.displayName,
+        hue: profile.avatarHue,
+        planetId: profile.planetId,
+      }}
+      persisted={persisted}
+    />
+  );
+}
+
+export default function ForumsPage() {
   return (
     <div className="container-px py-8">
       <header className="mb-6">
@@ -24,16 +43,9 @@ export default async function ForumsPage() {
         </p>
       </header>
 
-      <ForumBoard
-        initial={threads}
-        categories={FORUM_CATEGORIES}
-        me={{
-          name: profile.displayName,
-          hue: profile.avatarHue,
-          planetId: profile.planetId,
-        }}
-        persisted={persisted}
-      />
+      <Suspense fallback={<ForumsSkeleton />}>
+        <ForumsContent />
+      </Suspense>
     </div>
   );
 }

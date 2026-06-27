@@ -1,16 +1,20 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { getSession } from "@/lib/session";
+import { getWriterId } from "@/lib/auth";
 import { getFeed } from "@/lib/feed";
 import { isFirebaseAdminConfigured, isFirebaseConfigured } from "@/lib/env";
 import { TOP_PROFILES } from "@/lib/community";
 import { computeEcoScore, getLevel } from "@/lib/scoring";
 import { CommunityFeed } from "@/components/app/CommunityFeed";
 import { WhoToFollow } from "@/components/app/WhoToFollow";
+import { CommunitySkeleton } from "@/components/app/Skeletons";
 
 export const metadata: Metadata = { title: "Community" };
 
-export default async function CommunityPage() {
-  const [session, feed] = await Promise.all([getSession(), getFeed()]);
+async function CommunityContent() {
+  const [session, uid] = await Promise.all([getSession(), getWriterId()]);
+  const feed = await getFeed(uid);
   const { profile } = session;
   const persisted = isFirebaseAdminConfigured;
 
@@ -25,6 +29,29 @@ export default async function CommunityPage() {
       level: getLevel(computeEcoScore(p.stats)).name,
       country: p.country,
     }));
+
+  return (
+    <>
+      <div className="mx-auto max-w-2xl">
+        <WhoToFollow suggestions={suggestions} persisted={persisted} />
+      </div>
+
+      <CommunityFeed
+        initial={feed}
+        me={{
+          name: profile.displayName,
+          hue: profile.avatarHue,
+          planetId: profile.planetId,
+        }}
+        persisted={persisted}
+        realtime={isFirebaseConfigured}
+      />
+    </>
+  );
+}
+
+export default function CommunityPage() {
+  const persisted = isFirebaseAdminConfigured;
 
   return (
     <div className="container-px py-8">
@@ -45,20 +72,9 @@ export default async function CommunityPage() {
         </p>
       </header>
 
-      <div className="mx-auto max-w-2xl">
-        <WhoToFollow suggestions={suggestions} persisted={persisted} />
-      </div>
-
-      <CommunityFeed
-        initial={feed}
-        me={{
-          name: profile.displayName,
-          hue: profile.avatarHue,
-          planetId: profile.planetId,
-        }}
-        persisted={persisted}
-        realtime={isFirebaseConfigured}
-      />
+      <Suspense fallback={<CommunitySkeleton />}>
+        <CommunityContent />
+      </Suspense>
     </div>
   );
 }

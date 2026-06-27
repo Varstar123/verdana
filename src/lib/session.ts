@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import type { Profile } from "@/lib/types";
 import { isClerkConfigured, ADMIN_EMAILS } from "@/lib/env";
 import { DEMO_PROFILE } from "@/lib/community";
@@ -8,7 +9,7 @@ export interface Session {
   authenticated: boolean;
   /** true in demo mode (Clerk not configured) */
   demo: boolean;
-  /** true for admins (Clerk publicMetadata.role === "admin"); always true in demo */
+  /** true for admins (Clerk publicMetadata.role === "admin"); local demo only otherwise */
   isAdmin: boolean;
   profile: Profile;
 }
@@ -16,16 +17,19 @@ export interface Session {
 /**
  * Returns the active session.
  *
- * - Demo mode (no Clerk): the seeded demo profile, with admin access so the admin
- *   module is explorable.
+ * - Demo mode (no Clerk): the seeded demo profile. Admin is opened ONLY in local
+ *   dev so the module is explorable — a production deploy missing Clerk config
+ *   does NOT expose admin to the public (fail closed).
  * - Clerk signed in: identity from Clerk (Google). The profile is read from
  *   Firestore `profiles/{userId}` and CREATED fresh on first sign-in, so every
  *   real user gets their own Planet ID + stats. Falls back to the demo profile
  *   only if Firestore isn't configured.
  */
-export async function getSession(): Promise<Session> {
+export const getSession = cache(async function getSession(): Promise<Session> {
   if (!isClerkConfigured) {
-    return { authenticated: false, demo: true, isAdmin: true, profile: DEMO_PROFILE };
+    // Open admin for local exploration, but never on a public production build.
+    const demoAdmin = process.env.NODE_ENV !== "production";
+    return { authenticated: false, demo: true, isAdmin: demoAdmin, profile: DEMO_PROFILE };
   }
 
   try {
@@ -61,6 +65,23 @@ export async function getSession(): Promise<Session> {
 
     return { authenticated: true, demo: false, isAdmin, profile };
   } catch {
-    return { authenticated: false, demo: true, isAdmin: true, profile: DEMO_PROFILE };
+    // Fail closed: an unexpected auth error must never grant admin or sign-in.
+    // Treat the visitor as a signed-out, non-admin user.
+    return { authenticated: false, demo: false, isAdmin: false, profile: DEMO_PROFILE };
   }
+});
+
+/**
+ * Session for a write action. Throws "Unauthorized" unless the caller is a
+ * signed-in user — or the local dev demo (Clerk not configured AND not a
+ * production build). This means a production deploy that's missing Clerk config
+ * fails closed for writes, never persisting as the shared demo identity.
+ */
+export async function requireWriter(): Promise<Session> {
+  const session = await getSession();
+  const demoOk = session.demo && process.env.NODE_ENV !== "production";
+  if (!session.authenticated && !demoOk) {
+    throw new Error("Unauthorized");
+  }
+  return session;
 }
