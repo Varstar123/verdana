@@ -20,6 +20,8 @@ import {
 } from "@/lib/community";
 import { getActivity } from "@/lib/social";
 import { EarthScene } from "@/components/earth/EarthScene";
+import { VisionMission } from "@/components/VisionMission";
+import { QuestsTeaser } from "@/components/app/QuestsTeaser";
 import { StatCard } from "@/components/app/StatCard";
 import { ProgressRing } from "@/components/app/ProgressRing";
 import { BarChart } from "@/components/app/BarChart";
@@ -92,6 +94,9 @@ async function DashboardContent() {
           </span>
         </div>
       </header>
+
+      {/* Quests wallet teaser */}
+      <QuestsTeaser />
 
       {/* Earth + Global rank */}
       <section className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
@@ -180,6 +185,11 @@ async function DashboardContent() {
             })}
           </div>
         </div>
+      </section>
+
+      {/* Vision & Mission */}
+      <section>
+        <VisionMission variant="panel" />
       </section>
 
       {/* Stat cards */}

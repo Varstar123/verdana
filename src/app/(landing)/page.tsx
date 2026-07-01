@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { EarthScene } from "@/components/earth/EarthScene";
+import { VisionMission } from "@/components/VisionMission";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { GLOBAL_STATS } from "@/lib/community";
 import {
@@ -71,6 +72,9 @@ export default function LandingPage() {
           <a href="#features" className="rounded-full px-4 py-2 text-sm font-medium text-muted hover:text-ink">
             Features
           </a>
+          <a href="#mission" className="rounded-full px-4 py-2 text-sm font-medium text-muted hover:text-ink">
+            Mission
+          </a>
           <Link href="/leaderboard" className="rounded-full px-4 py-2 text-sm font-medium text-muted hover:text-ink">
             Changemakers
           </Link>
@@ -131,6 +135,11 @@ export default function LandingPage() {
           <div className="absolute inset-0 rounded-full bg-brand/20 blur-3xl" />
           <EarthScene health={74} interactive={false} />
         </div>
+      </section>
+
+      {/* Vision & Mission */}
+      <section id="mission" className="container-px scroll-mt-20 py-16">
+        <VisionMission variant="full" />
       </section>
 
       {/* Features */}

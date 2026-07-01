@@ -7,12 +7,14 @@ import {
   GlobeIcon,
   TrophyIcon,
   ChartIcon,
+  SparkIcon,
 } from "@/components/icons";
 
 export function MobileNav({ planetId }: { planetId: string }) {
   const pathname = usePathname();
   const items = [
     { href: "/dashboard", label: "Home", icon: HomeIcon },
+    { href: "/quests", label: "Quests", icon: SparkIcon },
     { href: "/earth", label: "Earth", icon: GlobeIcon },
     { href: "/leaderboard", label: "Ranks", icon: TrophyIcon },
     { href: `/profile/${planetId}`, label: "Profile", icon: ChartIcon },

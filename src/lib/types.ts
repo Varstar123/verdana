@@ -216,6 +216,45 @@ export interface DailyChallenge {
   done: boolean;
 }
 
+/* ----- Quests & tasks (photo-proof, do-it-at-home activities) ------------- */
+
+/** How an action is verified. `photo` requires a snapshot upload as proof. */
+export type QuestProof = "photo" | "check";
+
+/** A single, repeatable daily task (resets each day). */
+export interface QuestTask {
+  id: string;
+  title: string;
+  description: string;
+  emoji: string;
+  proof: QuestProof;
+  rewardCoins: number; // Green Coins (in-app money)
+  rewardXp: number; // Sprout Points
+  type: ContributionType;
+}
+
+/** One photo-proof step within a multi-step quest. */
+export interface QuestStep {
+  id: string;
+  title: string;
+  emoji: string;
+  rewardCoins: number;
+  rewardXp: number;
+}
+
+/** A multi-step journey that persists across days until finished. */
+export interface Quest {
+  id: string;
+  title: string;
+  description: string;
+  emoji: string;
+  accent: string; // hex used to theme the quest card
+  steps: QuestStep[];
+  bonusCoins: number; // awarded once every step is complete
+  bonusXp: number;
+  reward: string; // celebratory unlock label, e.g. "Sprout Gardener badge 🌱"
+}
+
 export interface MonthlyPoint {
   label: string; // "Jan"
   value: number;

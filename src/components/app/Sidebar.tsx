@@ -13,17 +13,21 @@ import {
   ChartIcon,
   SproutIcon,
   StarIcon,
+  HeartIcon,
+  SparkIcon,
 } from "@/components/icons";
 
 const nav = [
   { href: "/dashboard", label: "Dashboard", icon: HomeIcon },
   { href: "/earth", label: "My Earth", icon: SproutIcon },
+  { href: "/quests", label: "Quests", icon: SparkIcon },
   { href: "/globe", label: "Global Earth", icon: GlobeIcon },
   { href: "/leaderboard", label: "Changemakers", icon: TrophyIcon },
   { href: "/community", label: "Community", icon: UsersIcon },
   { href: "/forums", label: "Forums", icon: CompassIcon },
   { href: "/challenges", label: "Challenges", icon: TargetIcon },
   { href: "/rewards", label: "Levels", icon: StarIcon },
+  { href: "/mission", label: "Our Mission", icon: HeartIcon },
 ];
 
 export function Sidebar({ planetId }: { planetId: string }) {
