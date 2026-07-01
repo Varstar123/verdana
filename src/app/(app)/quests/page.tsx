@@ -1,10 +1,17 @@
 import type { Metadata } from "next";
+import { getWriterId } from "@/lib/auth";
+import { isFirebaseAdminConfigured } from "@/lib/env";
+import { readWallet } from "@/lib/quest-wallet";
 import { QuestBoard } from "@/components/app/QuestBoard";
-import { DAILY_TASKS, QUESTS } from "@/lib/quests";
+import { DAILY_TASKS, QUESTS, emptyWallet } from "@/lib/quests";
 
 export const metadata: Metadata = { title: "Quests" };
 
-export default function QuestsPage() {
+export default async function QuestsPage() {
+  const uid = await getWriterId();
+  const persisted = isFirebaseAdminConfigured && !!uid;
+  const initialWallet = persisted && uid ? await readWallet(uid) : emptyWallet();
+
   return (
     <div className="container-px py-8">
       <header className="mb-6">
@@ -19,7 +26,12 @@ export default function QuestsPage() {
         </p>
       </header>
 
-      <QuestBoard tasks={DAILY_TASKS} quests={QUESTS} />
+      <QuestBoard
+        tasks={DAILY_TASKS}
+        quests={QUESTS}
+        initialWallet={initialWallet}
+        persisted={persisted}
+      />
     </div>
   );
 }

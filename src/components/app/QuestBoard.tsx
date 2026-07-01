@@ -7,60 +7,39 @@ import {
   COINS_PER_REAL_TREE,
   REAL_TREE_PROJECTS,
   MASCOT_CHEERS,
+  emptyWallet,
+  questDayKey,
+  type QuestWallet,
   type RealTreeProject,
 } from "@/lib/quests";
+import { saveWalletAction } from "@/app/(app)/quests/actions";
 import { CheckIcon, SparkIcon, ArrowRightIcon } from "@/components/icons";
 
 /* ---------------------------------------------------------------------------
- * Wallet — the whole quests economy, persisted in localStorage so it survives
- * reloads. Daily tasks are keyed by date (they reset each day); quest progress
- * and the coin/point balances persist. Uploaded photos are sent to the server
- * for a quick AI review and then discarded — never stored; only completion
- * metadata is kept, here in localStorage.
+ * Wallet persistence. When signed in with Firebase configured, the wallet lives
+ * server-side (loaded on the page, saved via saveWalletAction) so coins and
+ * quest progress persist across logins and devices. Otherwise it falls back to
+ * this browser's localStorage (demo mode). Daily tasks reset each IST day; coins
+ * and quest progress persist. Uploaded photos are AI-reviewed, then discarded.
  * ------------------------------------------------------------------------- */
 
 const STORAGE_KEY = "verdana_quests_v1";
 
-interface Wallet {
-  coins: number; // spendable in-app money
-  xp: number; // lifetime Sprout Points
-  treesFunded: number; // real trees funded by redeeming coins
-  dailyDone: Record<string, string[]>; // dateKey -> completed task ids
-  questSteps: Record<string, string[]>; // questId -> completed step ids
-  questsBonus: string[]; // questIds whose finishing bonus was claimed
-}
-
-/** A brand-new, empty wallet (fresh nested objects each call). */
-function freshWallet(): Wallet {
-  return {
-    coins: 0,
-    xp: 0,
-    treesFunded: 0,
-    dailyDone: {},
-    questSteps: {},
-    questsBonus: [],
-  };
-}
-
-function todayKey(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function loadWallet(): Wallet {
+function loadLocalWallet(): QuestWallet {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return freshWallet();
-    const parsed = JSON.parse(raw) as Partial<Wallet>;
+    if (!raw) return emptyWallet();
+    const p = JSON.parse(raw) as Partial<QuestWallet>;
     return {
-      coins: parsed.coins ?? 0,
-      xp: parsed.xp ?? 0,
-      treesFunded: parsed.treesFunded ?? 0,
-      dailyDone: parsed.dailyDone ?? {},
-      questSteps: parsed.questSteps ?? {},
-      questsBonus: parsed.questsBonus ?? [],
+      coins: p.coins ?? 0,
+      xp: p.xp ?? 0,
+      treesFunded: p.treesFunded ?? 0,
+      dailyDone: p.dailyDone ?? {},
+      questSteps: p.questSteps ?? {},
+      questsBonus: p.questsBonus ?? [],
     };
   } catch {
-    return freshWallet();
+    return emptyWallet();
   }
 }
 
@@ -136,31 +115,50 @@ interface Flash {
 export function QuestBoard({
   tasks,
   quests,
+  initialWallet,
+  persisted,
 }: {
   tasks: QuestTask[];
   quests: Quest[];
+  initialWallet: QuestWallet;
+  persisted: boolean;
 }) {
-  const [wallet, setWallet] = useState<Wallet | null>(null);
+  // When persisted, start from the server's wallet (available at first render,
+  // so SSR and client hydrate identically). In demo mode, start null and load
+  // localStorage after mount.
+  const [wallet, setWallet] = useState<QuestWallet | null>(
+    persisted ? initialWallet : null,
+  );
   const [flash, setFlash] = useState<Flash | null>(null);
   const flashId = useRef(0);
   const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cheer = useRef(0);
+  const skipFirstSave = useRef(true);
   const redeemRef = useRef<HTMLDivElement>(null);
 
-  // Load once on mount (keeps SSR markup stable → no hydration mismatch).
+  // Demo mode: hydrate from localStorage after mount.
   useEffect(() => {
-    setWallet(loadWallet());
-  }, []);
+    if (!persisted) setWallet(loadLocalWallet());
+  }, [persisted]);
 
-  // Persist on every change.
+  // Persist on every change — to Firestore when signed in, else localStorage.
   useEffect(() => {
     if (!wallet) return;
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(wallet));
-    } catch {
-      /* ignore quota / private-mode errors */
+    if (persisted) {
+      // Don't re-save the wallet we were just handed by the server.
+      if (skipFirstSave.current) {
+        skipFirstSave.current = false;
+        return;
+      }
+      void saveWalletAction(wallet);
+    } else {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(wallet));
+      } catch {
+        /* ignore quota / private-mode errors */
+      }
     }
-  }, [wallet]);
+  }, [wallet, persisted]);
 
   useEffect(() => {
     return () => {
@@ -181,7 +179,7 @@ export function QuestBoard({
     return line;
   }
 
-  const today = todayKey();
+  const today = questDayKey();
   const doneToday = wallet?.dailyDone[today] ?? [];
 
   function completeTask(task: QuestTask) {

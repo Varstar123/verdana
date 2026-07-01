@@ -6,16 +6,27 @@ import { COINS_PER_REAL_TREE } from "@/lib/quests";
 import { ArrowRightIcon } from "@/components/icons";
 
 /**
- * Compact dashboard banner for the Quests economy. Reads the same localStorage
- * wallet the Quests page writes, so it always reflects the player's real coin
- * balance and progress toward their next real tree.
+ * Compact dashboard banner for the Quests economy. When the wallet is persisted
+ * server-side, the balance is passed in as props (rendered on the server, so
+ * it's correct immediately). In demo mode it falls back to reading the same
+ * localStorage wallet the Quests page writes.
  */
-export function QuestsTeaser() {
-  const [mounted, setMounted] = useState(false);
-  const [coins, setCoins] = useState(0);
-  const [treesFunded, setTreesFunded] = useState(0);
+export function QuestsTeaser({
+  persisted = false,
+  coins: coinsProp = 0,
+  treesFunded: treesProp = 0,
+}: {
+  persisted?: boolean;
+  coins?: number;
+  treesFunded?: number;
+}) {
+  // Persisted values are known at render time; demo values load after mount.
+  const [mounted, setMounted] = useState(persisted);
+  const [coins, setCoins] = useState(coinsProp);
+  const [treesFunded, setTreesFunded] = useState(treesProp);
 
   useEffect(() => {
+    if (persisted) return; // server-provided — nothing to read
     setMounted(true);
     try {
       const raw = localStorage.getItem("verdana_quests_v1");
@@ -27,7 +38,7 @@ export function QuestsTeaser() {
     } catch {
       /* ignore */
     }
-  }, []);
+  }, [persisted]);
 
   const towardNext = coins % COINS_PER_REAL_TREE;
   const pct = Math.round((towardNext / COINS_PER_REAL_TREE) * 100);

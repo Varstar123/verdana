@@ -200,3 +200,28 @@ export const MASCOT_CHEERS = [
   "The Earth just smiled a little. 😊",
   "Tiny action, real impact — keep going! 💚",
 ];
+
+/* ----- Wallet (persisted per user) ---------------------------------------- */
+
+export interface QuestWallet {
+  coins: number; // spendable in-app money
+  xp: number; // lifetime Sprout Points
+  treesFunded: number; // real trees funded by redeeming coins
+  dailyDone: Record<string, string[]>; // day key -> completed daily-task ids
+  questSteps: Record<string, string[]>; // questId -> completed step ids
+  questsBonus: string[]; // questIds whose finishing bonus was claimed
+}
+
+export function emptyWallet(): QuestWallet {
+  return { coins: 0, xp: 0, treesFunded: 0, dailyDone: {}, questSteps: {}, questsBonus: [] };
+}
+
+/**
+ * Day key used to reset daily tasks. Based on IST (UTC+5:30) so tasks roll over
+ * at local midnight in India. Server and client compute this identically, so
+ * they always agree on which day "today" is.
+ */
+const IST_OFFSET_MIN = 330;
+export function questDayKey(): string {
+  return new Date(Date.now() + IST_OFFSET_MIN * 60_000).toISOString().slice(0, 10);
+}

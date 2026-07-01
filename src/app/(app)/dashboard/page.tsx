@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
 import { getSession } from "@/lib/session";
+import { getWriterId } from "@/lib/auth";
+import { isFirebaseAdminConfigured } from "@/lib/env";
+import { readWallet } from "@/lib/quest-wallet";
 import {
   computeEcoScore,
   computeEarthHealth,
@@ -60,6 +63,10 @@ async function DashboardContent() {
   const nearby = nearbyRankRows();
   const activity = await getActivity();
 
+  const uid = await getWriterId();
+  const questsPersisted = isFirebaseAdminConfigured && !!uid;
+  const questWallet = questsPersisted && uid ? await readWallet(uid) : null;
+
   const stats = [
     { label: "Trees planted", value: s.treesPlanted, iconKey: "tree" as const, accent: "#22A155" },
     { label: "CO₂ offset", value: s.co2OffsetKg, unit: "kg", iconKey: "leaf" as const, accent: "#2DD4BF", formatKey: "compact" as const },
@@ -96,7 +103,11 @@ async function DashboardContent() {
       </header>
 
       {/* Quests wallet teaser */}
-      <QuestsTeaser />
+      <QuestsTeaser
+        persisted={questsPersisted}
+        coins={questWallet?.coins ?? 0}
+        treesFunded={questWallet?.treesFunded ?? 0}
+      />
 
       {/* Earth + Global rank */}
       <section className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
